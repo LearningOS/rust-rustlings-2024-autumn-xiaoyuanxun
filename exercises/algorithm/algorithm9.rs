@@ -2,7 +2,6 @@
 	heap
 	This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
 
 use std::cmp::Ord;
 use std::default::Default;
@@ -18,7 +17,7 @@ where
 
 impl<T> Heap<T>
 where
-    T: Default,
+    T: Default + std::cmp::PartialOrd,
 {
     pub fn new(comparator: fn(&T, &T) -> bool) -> Self {
         Self {
@@ -38,6 +37,15 @@ where
 
     pub fn add(&mut self, value: T) {
         //TODO
+        self.items.push(value);
+        self.count += 1;
+        let mut child_idx = self.count;
+        let mut parent_idx = self.parent_idx(child_idx);
+        while (self.comparator)(&self.items[child_idx], &self.items[parent_idx]) && parent_idx > 0{
+            self.items.swap(child_idx, parent_idx);
+            child_idx = parent_idx;
+            parent_idx = self.parent_idx(child_idx);
+        }
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -58,7 +66,19 @@ where
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
         //TODO
-		0
+        // if mini heap: oper = <, need smaller one, else need larger one
+        // so, this func will return the idx which will be changed
+        if self.children_present(idx) {
+            if self.right_child_idx(idx) > self.count {
+                return self.left_child_idx(idx);
+            }
+            if (&self.comparator)(&self.items[self.left_child_idx(idx)], &self.items[self.right_child_idx(idx)]) {
+                return self.left_child_idx(idx);
+            } else {
+                return self.right_child_idx(idx);
+            }
+        }
+        0
     }
 }
 
@@ -79,13 +99,34 @@ where
 
 impl<T> Iterator for Heap<T>
 where
-    T: Default,
+    T: Default + PartialOrd,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        //TODO
-		None
+        if self.count > 0 {
+            self.items.swap(1, self.count);
+            let res = self.items.pop().unwrap();
+            self.count -= 1;
+            let mut idx = 1;
+            let mut may_change_idx = self.smallest_child_idx(idx);
+
+            if may_change_idx == 0 {
+                return Some(res);
+            }
+            
+            while (self.comparator)(&self.items[may_change_idx], &self.items[idx]) {
+                self.items.swap(may_change_idx, idx);
+                idx = may_change_idx;
+                may_change_idx = self.smallest_child_idx(idx);
+                
+                if may_change_idx == 0 {
+                    return Some(res);
+                }
+            }
+            
+            Some(res)
+        } else { None }
     }
 }
 
